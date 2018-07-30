@@ -1,1 +1,1 @@
-*ElockyAPI* is a PHP implementation of the [elocky API](https://www.elocky.com/en/doc-api-test).
+*ElockyAPI* is a PHP implementation of the [elocky API](https://www.elocky.com/en/doc-api-test)
