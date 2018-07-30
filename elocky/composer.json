@@ -1,0 +1,15 @@
+{
+    "name": "domotruc/ElockyAPI",
+    "description": "Elocky API implementation",
+    "type": "library",
+    "license": "AGPL-3.0",
+    "authors": [
+        {
+            "name": "domotruc",
+            "email": "domotruc@gmail.com"
+        }
+    ],
+    "require": {
+        "php": "^7.0"
+    }
+}
