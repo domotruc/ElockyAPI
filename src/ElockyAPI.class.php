@@ -112,10 +112,7 @@ class ElockyAPI {
         
     }
     
-    
-    
     ###################################
-    
     
     public function getAccessToken() {
         return $this->access_token;
@@ -138,25 +135,40 @@ class ElockyAPI {
                 $this->getSecretIdFields() . "&grant_type=password&username=" . $this->username . "&password=" . $this->password);
     }
     
+    /**
+     * @param string $url request url to contact
+     * @param string $param request parameters
+     * @throws Exception if the Elocky servers returns a non JSON string; or if the Elocky server returned an error
+     * @return array JSON array
+     */
     protected function curlExec($url, $param) {
         $ch = curl_init($url . '?' . $param);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
         curl_close($ch);
+
+        // Call the callback if defined
         if (isset($this->postreq_callback))
             call_user_func($this->postreq_callback, $data);
-        return json_decode($data, TRUE);
+        
+        $jsonArray = json_decode($data, TRUE);
+        if (json_last_error() != JSON_ERROR_NONE)
+            throw Exception(json_last_error_msg());
+        
+        if (array_key_exists('error', $jsonArray))
+            throw new Exception($data);
+        
+        return $jsonArray;
     }
         
     protected function getSecretIdFields() {
         return "client_id=" . $this->client_id . "&client_secret=" . $this->client_secret;
     }
-     
+    
     private function processToken($_jsonArray) {
         $this->access_token = $_jsonArray['access_token'];
         if (array_key_exists('refresh_token', $_jsonArray))
             $this->refresh_token = $_jsonArray['refresh_token'];
         $this->expiry_date = (new DateTime())->add(new DateInterval('PT'.$_jsonArray['expires_in'].'S'));
-        
     }
 }
