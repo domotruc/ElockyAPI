@@ -1,6 +1,27 @@
 <?php
 
-class ElockyAPI {
+namespace ElockyAPI;
+
+
+/**
+ * Implemeent the Elocky API.
+ * The User class is either an anonymous user or an authenticated user depending on the credential parameters 
+ * at object creation.
+ * @see https://elocky.com/fr/doc-api-test Elocky API
+ * @author domotruc
+ *
+ */
+class User {
+    
+    
+    /**
+     * @var unknown
+     */
+    const ACCESS_TOKEN_ID = 'access_token';
+
+    const REFRESH_TOKEN_ID = 'refresh_token';
+    const EXPIRY_DATE_ID = 'expiry_date';
+    
     
     // Client id and secret
     private $client_id;
@@ -20,7 +41,7 @@ class ElockyAPI {
     private $refresh_token;
     
     /**
-     * @var DateTime Token expiry date
+     * @var \DateTime Token expiry date
      */
     private $expiry_date;
     
@@ -30,9 +51,8 @@ class ElockyAPI {
     private $postreq_callback;
     
 
-    /*
-     * CONSTRUCTORS
-     */
+    # CONSTRUCTORS
+    ##############
     
     function __construct() {
         $a = func_get_args();
@@ -42,14 +62,9 @@ class ElockyAPI {
         }
     }
     
-    protected function __construct1($_token) {
-        $this->access_token = $_token;
-    }
-    
     protected function __construct2($_client_id, $_client_secret) {
         $this->client_id = $_client_id;
         $this->client_secret = $_client_secret;
-        $this->processToken($this->requestAnonymousToken());
     }
 
     protected function __construct4($_client_id, $_client_secret, $_username, $_password) {
@@ -57,7 +72,6 @@ class ElockyAPI {
         $this->client_secret = $_client_secret;
         $this->username = $_username;
         $this->password = $_password;
-        $this->processToken($this->requestUserToken());
     }
     
     protected function __construct5($_client_id, $_client_secret, $_username, $_password, $_postreq_callback) {
@@ -85,45 +99,93 @@ class ElockyAPI {
     
     /**
      * Return the list of countries and time zone
+     * @see https://elocky.com/fr/doc-api-test#liste-pays Elocky API
      * @return array list of countries and time zone
      */
-    public function getCountries() {
+    public function requestCountries() {
+        $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/country.json", 'access_token=' . $this->access_token);
     }
     
-    public function getPlaces() {
+    /** 
+     * Return the places associated to this user
+     * @see https://elocky.com/fr/doc-api-test#liste-lieu Elocky API
+     * @return array list of places as an associative array
+     */
+    public function requestPlaces() {
+        $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/list.json", 'access_token=' . $this->access_token);
     }
     
     # Access management
     ###################
     
-    public function getAccesses() {
+    public function requestAccesses() {
+        $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/access/list/user.json", 'access_token=' . $this->access_token);
     }
     
-    public function getGuests() {
+    public function requestGuests() {
+        $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/access/list/invite.json", 'access_token=' . $this->access_token);
     }
     
     # Object management
     ###################
-    public function getObjects() {
+    public function requestObjects() {
+        $this->manageToken();
         
     }
     
     ###################################
     
-    public function getAccessToken() {
-        return $this->access_token;
+    
+    /**
+     * Return token data related to this User.
+     * @return array associative array which keys are ACCESS_TOKEN_ID, REFRESH_TOKEN_ID and EXPIRY_DATE_ID
+     * (EXPIRY_DATE_ID is a timestamp format)
+     */
+    public function getAuthenticationData() {
+        $this->manageToken();
+        return json_encode(array(
+                self::ACCESS_TOKEN_ID => $this->access_token,
+                self::REFRESH_TOKEN_ID => $this->refresh_token,
+                self::EXPIRY_DATE_ID => $this->expiry_date->getTimestamp()
+        ));
     }
     
-    public function getRefreshToken() {
-        return $this->refresh_token;
+    /**
+     * Set token data previously retrieved with getAuthenticationData.
+     * @param array associative array which keys are ACCESS_TOKEN_ID, REFRESH_TOKEN_ID and EXPIRY_DATE_ID
+     * (EXPIRY_DATE_ID is a timestamp format)
+     */
+    public function setAuthenticationData(array $_authData) {
+        $this->access_token = $_authData[self::ACCESS_TOKEN_ID];
+        $this->refresh_token = $_authData[self::REFRESH_TOKEN_ID];
+        $this->expiry_date = (new \DateTime())->setTimestamp($_authData[self::EXPIRY_DATE_ID]);
     }
     
+    /**
+     * Return the token expiry date
+     * @return \DateTime Token expiry date
+     */
     public function getTokenExpiryDate() {
         return $this->expiry_date;
+    }
+        
+    /**
+     * Manage the token validity. This method shall be called before each request to the Elocky server
+     * to insure that the token is defined and valid.
+     */
+    protected function manageToken() {
+        if (isset($this->access_token)) {
+            if (!$this->isTokenValid()) {
+                $this->refreshToken();
+            }
+        }
+        else {
+            $this->initToken();
+        }
     }
     
     protected function requestAnonymousToken() {
@@ -133,6 +195,35 @@ class ElockyAPI {
     protected function requestUserToken() {
         return $this->curlExec("https://www.elocky.com/oauth/v2/token",
                 $this->getSecretIdFields() . "&grant_type=password&username=" . $this->username . "&password=" . $this->password);
+    }
+    
+    protected function requestUserTokenRefresh() {
+        return $this->curlExec("https://www.elocky.com/oauth/v2/token",
+                $this->getSecretIdFields() . "&grant_type=refresh_token&refresh_token=" . $this->refresh_token);
+    }
+    
+    protected function refreshToken() {
+        if (isset($this->refresh_token)) {
+            $this->processToken($this->requestUserTokenRefresh());
+        }
+        else {
+            $this->processToken($this->initToken());
+        }
+    }
+    
+    protected function initToken() {
+        if (isset($this->username))
+            $this->processToken($this->requestUserToken());
+        else
+            $this->processToken($this->requestAnonymousToken());
+    }
+    
+    /**
+     * Returns whether or not the token is valid.
+     * @return boolean TRUE if token is still valid, FALSE if not
+     */
+    protected function isTokenValid() {
+        return ($this->expiry_date > (new \DateTime())->add(new \DateInterval('PT60S')));
     }
     
     /**
@@ -153,14 +244,14 @@ class ElockyAPI {
         
         $jsonArray = json_decode($data, TRUE);
         if (json_last_error() != JSON_ERROR_NONE)
-            throw Exception(json_last_error_msg());
+            throw new \Exception(json_last_error_msg());
         
         if (array_key_exists('error', $jsonArray))
-            throw new Exception($data);
+            throw new \Exception($data);
         
         return $jsonArray;
     }
-        
+    
     protected function getSecretIdFields() {
         return "client_id=" . $this->client_id . "&client_secret=" . $this->client_secret;
     }
@@ -169,6 +260,6 @@ class ElockyAPI {
         $this->access_token = $_jsonArray['access_token'];
         if (array_key_exists('refresh_token', $_jsonArray))
             $this->refresh_token = $_jsonArray['refresh_token'];
-        $this->expiry_date = (new DateTime())->add(new DateInterval('PT'.$_jsonArray['expires_in'].'S'));
+        $this->expiry_date = (new \DateTime())->add(new \DateInterval('PT'.$_jsonArray['expires_in'].'S'));
     }
 }
