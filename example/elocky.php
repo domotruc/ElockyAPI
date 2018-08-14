@@ -53,19 +53,19 @@ $api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD);
 if (file_exists($f)) {
     $authData = json_decode(file_get_contents($f), TRUE);
     $api->setAuthenticationData($authData);
+    print('expiry token date:' . $api->getTokenExpiryDate()->format('Y-m-d H:i:s') . PHP_EOL);
 }
-
-print('expiry token date:' . $api->getTokenExpiryDate()->format('Y-m-d H:i:s') . PHP_EOL);
 
 $userProfile = $api->requestUserProfile();
 print('User profile:' . PHP_EOL . json_encode($userProfile, JSON_PRETTY_PRINT) . PHP_EOL);
 
-print('Places:' . PHP_EOL . json_encode($api->requestPlaces(), JSON_PRETTY_PRINT) . PHP_EOL);
+$places = $api->requestPlaces();
+print('Places:' . PHP_EOL . json_encode($places, JSON_PRETTY_PRINT) . PHP_EOL);
 
 print('Accesses:' . PHP_EOL . json_encode($api->requestAccesses(), JSON_PRETTY_PRINT) . PHP_EOL);
 
 print('Guests:' . PHP_EOL . json_encode($api->requestGuests(), JSON_PRETTY_PRINT) . PHP_EOL);
 
-print('Objects:' . PHP_EOL . json_encode($api->requestObjects(), JSON_PRETTY_PRINT) . PHP_EOL);
+print('Objects of ' . $places['lieux'][0]['address'] . PHP_EOL . json_encode($api->requestObjects($userProfile['reference'], $places['lieux'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
 file_put_contents($f, $api->getAuthenticationData());

@@ -145,9 +145,9 @@ class User {
     
     # Object management
     ###################
-    public function requestObjects() {
+    public function requestObjects($_refAdmin, $_idPlace) {
         $this->manageToken();
-        //return $this->curlExec("https://www.elocky.com/webservice/address/object/invite.json", 'access_token=' . $this->access_token);
+        return $this->curlExec("https://www.elocky.com/webservice/address/object/" . $_refAdmin . "/" . $_idPlace . ".json", 'access_token=' . $this->access_token);
     }
     
     ###################################
