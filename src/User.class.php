@@ -94,6 +94,19 @@ class User {
         print(json_encode(json_decode($s), JSON_PRETTY_PRINT));
     }
     
+    # User management
+    #################
+    /**
+     * Return the user profile
+     * @see https://elocky.com/fr/doc-api-test#get-user Elocky API
+     * @return array user profile as an associative array
+     */
+    public function requestUserProfile() {
+        $this->manageToken();
+        return $this->curlExec("https://www.elocky.com/webservice/user/.json", 'access_token=' . $this->access_token);
+    }
+    
+    
     # Places management
     ###################
     
@@ -134,7 +147,7 @@ class User {
     ###################
     public function requestObjects() {
         $this->manageToken();
-        
+        //return $this->curlExec("https://www.elocky.com/webservice/address/object/invite.json", 'access_token=' . $this->access_token);
     }
     
     ###################################
