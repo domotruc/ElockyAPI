@@ -37,8 +37,6 @@ function getLog($access_token, $id) {
     return $data;
 }
 
-$f = $_SERVER['HOME'] . '/tmp/elocky_auth.txt';
-
 // Try with wrong id
 try {
     $api = new User('', '');
@@ -57,8 +55,8 @@ $api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD,
                 }
             });
         
-if (file_exists($f)) {
-    $authData = json_decode(file_get_contents($f), TRUE);
+if (file_exists(TOKEN_FILENAME)) {
+    $authData = json_decode(file_get_contents(TOKEN_FILENAME), TRUE);
     $api->setAuthenticationData($authData);
     print('expiry token date:' . $api->getTokenExpiryDate()->format('Y-m-d H:i:s') . PHP_EOL);
 }
@@ -75,4 +73,4 @@ print('Guests:' . PHP_EOL . json_encode($api->requestGuests(), JSON_PRETTY_PRINT
 
 print('Objects of ' . $places['lieux'][0]['address'] . PHP_EOL . json_encode($api->requestObjects($userProfile['reference'], $places['lieux'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
-file_put_contents($f, $api->getAuthenticationData());
+file_put_contents(TOKEN_FILENAME, $api->getAuthenticationData());
