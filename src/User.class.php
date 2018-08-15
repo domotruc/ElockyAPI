@@ -23,9 +23,15 @@ class User {
     private $client_id;
     private $client_secret;
     
+    /**
+     * @var string authenticated user name
+     */
     private $username;
-    private $password;
     
+    /**
+     * @var string authenticated user password
+     */
+    private $password;
     
     /**
      * PSR-3 compliant logger 
@@ -66,6 +72,7 @@ class User {
     protected function __construct2($_client_id, $_client_secret) {
         $this->client_id = $_client_id;
         $this->client_secret = $_client_secret;
+        $this->logger->debug('anonymous user creation');
     }
 
     protected function __construct3($_client_id, $_client_secret, LoggerInterface $_logger) {
@@ -78,6 +85,7 @@ class User {
         $this->client_secret = $_client_secret;
         $this->username = $_username;
         $this->password = $_password;
+        $this->logger->debug('authenticated user creation');
     }
     
     protected function __construct5($_client_id, $_client_secret, $_username, $_password, LoggerInterface $_logger) {
@@ -173,6 +181,7 @@ class User {
         $this->access_token = $_authData[self::ACCESS_TOKEN_ID];
         $this->refresh_token = $_authData[self::REFRESH_TOKEN_ID];
         $this->expiry_date = (new \DateTime())->setTimestamp($_authData[self::EXPIRY_DATE_ID]);
+        $this->logger->debug('authentication data set');
     }
     
     /**
@@ -189,11 +198,16 @@ class User {
      */
     protected function manageToken() {
         if (isset($this->access_token)) {
-            if (!$this->isTokenValid()) {
+            if ($this->isTokenValid()) {
+                $this->logger->debug('current token is still valid');
+            }
+            else {
+                $this->logger->info('current token is no more valid, refresh it');
                 $this->refreshToken();
             }
         }
         else {
+            $this->logger->info('token initialization');
             $this->initToken();
         }
     }
@@ -214,18 +228,29 @@ class User {
     
     protected function refreshToken() {
         if (isset($this->refresh_token)) {
+            $this->logger->info('refresh the current token');
             $this->processToken($this->requestUserTokenRefresh());
         }
         else {
-            $this->processToken($this->initToken());
+            $this->initToken();
         }
     }
     
+    /**
+     * Initialize an access token for this User.
+     * If username/password are set an authenticated access is requested. An anonymous one otherwise.
+     * @see User::$username
+     * @see User::$password
+     */
     protected function initToken() {
-        if (isset($this->username))
+        if (isset($this->username)) {
+            $this->logger->info('request an authenticated user access');
             $this->processToken($this->requestUserToken());
-        else
+        }
+        else {
+            $this->logger->info('request an anonymous access');
             $this->processToken($this->requestAnonymousToken());
+        }
     }
     
     /**
@@ -248,14 +273,19 @@ class User {
         $data = curl_exec($ch);
         curl_close($ch);
 
-        $this->logger->debug('ElockyAPI receives: ' . $data);
+        $this->logger->debug('Reception from Elocky server: ' . $data);
         
         $jsonArray = json_decode($data, TRUE);
-        if (json_last_error() != JSON_ERROR_NONE)
-            throw new \Exception(json_last_error_msg());
+        if (json_last_error() != JSON_ERROR_NONE) {
+            $msg = json_last_error_msg();
+            $this->logger->critical('json decoding error: ' . $msg);
+            throw new \Exception($msg);
+        }
         
-        if (array_key_exists('error', $jsonArray))
+        if (array_key_exists('error', $jsonArray)) {
+            $this->logger->error('Elocky server returns an error: ' . $data);
             throw new \Exception($data);
+        }
         
         return $jsonArray;
     }

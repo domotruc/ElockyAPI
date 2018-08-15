@@ -51,7 +51,7 @@ try {
 $api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD,
             new class extends AbstractLogger {
                 public function log($level, $message, array $context = array()) {
-                    print('ElockyAPI:' . $level . ':' . $message);
+                    print('ElockyAPI:' . $level . ':' . $message . PHP_EOL);
                 }
             });
         
@@ -73,4 +73,4 @@ print('Guests:' . PHP_EOL . json_encode($api->requestGuests(), JSON_PRETTY_PRINT
 
 print('Objects of ' . $places['lieux'][0]['address'] . PHP_EOL . json_encode($api->requestObjects($userProfile['reference'], $places['lieux'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
-file_put_contents(TOKEN_FILENAME, $api->getAuthenticationData());
+file_put_contents(TOKEN_FILENAME, json_encode($api->getAuthenticationData()));
