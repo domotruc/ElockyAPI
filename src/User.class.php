@@ -2,6 +2,8 @@
 
 namespace ElockyAPI;
 
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 
 /**
  * Implemeent the Elocky API.
@@ -12,16 +14,10 @@ namespace ElockyAPI;
  *
  */
 class User {
-    
-    
-    /**
-     * @var unknown
-     */
+      
     const ACCESS_TOKEN_ID = 'access_token';
-
     const REFRESH_TOKEN_ID = 'refresh_token';
     const EXPIRY_DATE_ID = 'expiry_date';
-    
     
     // Client id and secret
     private $client_id;
@@ -29,6 +25,13 @@ class User {
     
     private $username;
     private $password;
+    
+    
+    /**
+     * PSR-3 compliant logger 
+     * @var LoggerInterface
+     */
+    private $logger;
     
     /**
      * @var string access token
@@ -43,18 +46,16 @@ class User {
     /**
      * @var \DateTime Token expiry date
      */
-    private $expiry_date;
-    
-    /**
-     * @var callable Callback called after reception of API result
-     */
-    private $postreq_callback;
-    
+    private $expiry_date;   
 
     # CONSTRUCTORS
     ##############
     
     function __construct() {
+        
+        // Default logger that does nothing
+        $this->logger = new NullLogger();
+        
         $a = func_get_args();
         $i = func_num_args();
         if (method_exists($this,$f='__construct'.$i)) {
@@ -67,6 +68,11 @@ class User {
         $this->client_secret = $_client_secret;
     }
 
+    protected function __construct3($_client_id, $_client_secret, LoggerInterface $_logger) {
+        $this->logger = $_logger;
+        $this->__construct2($_client_id, $_client_secret);
+    }
+    
     protected function __construct4($_client_id, $_client_secret, $_username, $_password) {
         $this->client_id = $_client_id;
         $this->client_secret = $_client_secret;
@@ -74,22 +80,13 @@ class User {
         $this->password = $_password;
     }
     
-    protected function __construct5($_client_id, $_client_secret, $_username, $_password, $_postreq_callback) {
-        $this->setPostRequestCallback($_postreq_callback);
+    protected function __construct5($_client_id, $_client_secret, $_username, $_password, LoggerInterface $_logger) {
+        $this->logger = $_logger;
         $this->__construct4($_client_id, $_client_secret, $_username, $_password);
     }
     
     # API functionalities management
-    ################################
-    /**
-     * Set the callback to be called after each API request result reception
-     * Callback shall have one string parameter which is the JSON request result
-     * @param callable Callback 
-     */
-    public function setPostRequestCallback(callable $_postreq_callback) {
-        $this->postreq_callback = $_postreq_callback;
-    }
-    
+    ################################    
     public static function printJson($s) {
         print(json_encode(json_decode($s), JSON_PRETTY_PRINT));
     }
@@ -242,7 +239,7 @@ class User {
     /**
      * @param string $url request url to contact
      * @param string $param request parameters
-     * @throws Exception if the Elocky servers returns a non JSON string; or if the Elocky server returned an error
+     * @throws \Exception if the Elocky servers returns a non JSON string; or if the Elocky server returned an error
      * @return array JSON array
      */
     protected function curlExec($url, $param) {
@@ -251,9 +248,7 @@ class User {
         $data = curl_exec($ch);
         curl_close($ch);
 
-        // Call the callback if defined
-        if (isset($this->postreq_callback))
-            call_user_func($this->postreq_callback, $data);
+        $this->logger->debug('ElockyAPI receives: ' . $data);
         
         $jsonArray = json_decode($data, TRUE);
         if (json_last_error() != JSON_ERROR_NONE)

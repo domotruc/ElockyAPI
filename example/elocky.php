@@ -1,9 +1,11 @@
 <?php
 
-require '../src/User.class.php';
+require '../vendor/autoload.php';
 include 'credential.php';
 
 use ElockyAPI\User as User;
+use Psr\Log\LoggerInterface;
+use Psr\Log\AbstractLogger;
 
 function printRequestResult($_data) {
     print($_data . PHP_EOL);
@@ -45,10 +47,15 @@ try {
 } 
 
 // Anonymous user
-$api = new User(CLIENT_ID, CLIENT_SECRET);
+//$api = new User(CLIENT_ID, CLIENT_SECRET);
 
 //Authenticated user
-$api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD);
+$api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD,
+            new class extends AbstractLogger {
+                public function log($level, $message, array $context = array()) {
+                    print('ElockyAPI:' . $level . ':' . $message);
+                }
+            });
         
 if (file_exists($f)) {
     $authData = json_decode(file_get_contents($f), TRUE);
