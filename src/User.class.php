@@ -98,7 +98,7 @@ class User {
      * @see https://elocky.com/fr/doc-api-test#get-user Elocky API
      * @return array user profile as an associative array
      */
-    public function requestUserProfile() {
+    public function requestUserProfile() : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/user/.json", 'access_token=' . $this->access_token);
     }
@@ -112,7 +112,7 @@ class User {
      * @see https://elocky.com/fr/doc-api-test#liste-pays Elocky API
      * @return array list of countries and time zone
      */
-    public function requestCountries() {
+    public function requestCountries() : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/country.json", 'access_token=' . $this->access_token);
     }
@@ -122,7 +122,7 @@ class User {
      * @see https://elocky.com/fr/doc-api-test#liste-lieu Elocky API
      * @return array list of places as an associative array
      */
-    public function requestPlaces() {
+    public function requestPlaces() : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/list.json", 'access_token=' . $this->access_token);
     }
@@ -130,19 +130,19 @@ class User {
     # Access management
     ###################
     
-    public function requestAccesses() {
+    public function requestAccesses() : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/access/list/user.json", 'access_token=' . $this->access_token);
     }
     
-    public function requestGuests() {
+    public function requestGuests() : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/access/list/invite.json", 'access_token=' . $this->access_token);
     }
     
     # Object management
     ###################
-    public function requestObjects($_refAdmin, $_idPlace) {
+    public function requestObjects($_refAdmin, $_idPlace) : array {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/object/" . $_refAdmin . "/" . $_idPlace . ".json", 'access_token=' . $this->access_token);
     }
@@ -155,13 +155,13 @@ class User {
      * @return array associative array which keys are ACCESS_TOKEN_ID, REFRESH_TOKEN_ID and EXPIRY_DATE_ID
      * (EXPIRY_DATE_ID is a timestamp format)
      */
-    public function getAuthenticationData() {
+    public function getAuthenticationData() : array {
         $this->manageToken();
-        return json_encode(array(
+        return array(
                 self::ACCESS_TOKEN_ID => $this->access_token,
                 self::REFRESH_TOKEN_ID => $this->refresh_token,
                 self::EXPIRY_DATE_ID => $this->expiry_date->getTimestamp()
-        ));
+        );
     }
     
     /**
@@ -179,7 +179,7 @@ class User {
      * Return the token expiry date
      * @return \DateTime Token expiry date
      */
-    public function getTokenExpiryDate() {
+    public function getTokenExpiryDate() : \DateTime {
         return $this->expiry_date;
     }
         
@@ -198,16 +198,16 @@ class User {
         }
     }
     
-    protected function requestAnonymousToken() {
+    protected function requestAnonymousToken() : array {
         return $this->curlExec("https://www.elocky.com/oauth/v2/token", $this->getSecretIdFields() ."&grant_type=client_credentials");
     }
     
-    protected function requestUserToken() {
+    protected function requestUserToken() : array {
         return $this->curlExec("https://www.elocky.com/oauth/v2/token",
                 $this->getSecretIdFields() . "&grant_type=password&username=" . $this->username . "&password=" . $this->password);
     }
     
-    protected function requestUserTokenRefresh() {
+    protected function requestUserTokenRefresh() : array {
         return $this->curlExec("https://www.elocky.com/oauth/v2/token",
                 $this->getSecretIdFields() . "&grant_type=refresh_token&refresh_token=" . $this->refresh_token);
     }
@@ -232,7 +232,7 @@ class User {
      * Returns whether or not the token is valid.
      * @return boolean TRUE if token is still valid, FALSE if not
      */
-    protected function isTokenValid() {
+    protected function isTokenValid() : bool {
         return ($this->expiry_date > (new \DateTime())->add(new \DateInterval('PT60S')));
     }
     
@@ -242,7 +242,7 @@ class User {
      * @throws \Exception if the Elocky servers returns a non JSON string; or if the Elocky server returned an error
      * @return array JSON array
      */
-    protected function curlExec($url, $param) {
+    protected function curlExec($url, $param) : array {
         $ch = curl_init($url . '?' . $param);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
@@ -260,7 +260,7 @@ class User {
         return $jsonArray;
     }
     
-    protected function getSecretIdFields() {
+    protected function getSecretIdFields() : string {
         return "client_id=" . $this->client_id . "&client_secret=" . $this->client_secret;
     }
     
