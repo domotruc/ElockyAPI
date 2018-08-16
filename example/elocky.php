@@ -4,8 +4,13 @@ require '../vendor/autoload.php';
 include 'credential.php';
 
 use ElockyAPI\User as User;
-use Psr\Log\LoggerInterface;
 use Psr\Log\AbstractLogger;
+
+class Logger extends AbstractLogger {
+    public function log($level, $message, array $context = array()) {
+        print('ElockyAPI:' . $level . ':' . $message . PHP_EOL);
+    }
+}
 
 function printRequestResult($_data) {
     print($_data . PHP_EOL);
@@ -39,7 +44,7 @@ function getLog($access_token, $id) {
 
 // Try with wrong id
 try {
-    $api = new User('', '');
+    new User('', '');
 } catch (Exception $e) {
     print('ERROR: ' . $e->getMessage() . PHP_EOL);
 } 
@@ -48,12 +53,7 @@ try {
 //$api = new User(CLIENT_ID, CLIENT_SECRET);
 
 //Authenticated user
-$api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD,
-            new class extends AbstractLogger {
-                public function log($level, $message, array $context = array()) {
-                    print('ElockyAPI:' . $level . ':' . $message . PHP_EOL);
-                }
-            });
+$api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD, new Logger());
         
 if (file_exists(TOKEN_FILENAME)) {
     $authData = json_decode(file_get_contents(TOKEN_FILENAME), TRUE);
