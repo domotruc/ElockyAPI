@@ -55,14 +55,18 @@ try {
 //Authenticated user
 $api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD, new Logger());
         
-if (file_exists(TOKEN_FILENAME)) {
-    $authData = json_decode(file_get_contents(TOKEN_FILENAME), TRUE);
+$token_filename = DATA_DIR . '/elocky_auth.txt';
+if (file_exists($token_filename)) {
+    $authData = json_decode(file_get_contents($token_filename), TRUE);
     $api->setAuthenticationData($authData);
     print('expiry token date:' . $api->getTokenExpiryDate()->format('Y-m-d H:i:s') . PHP_EOL);
 }
 
 $userProfile = $api->requestUserProfile();
 print('User profile:' . PHP_EOL . json_encode($userProfile, JSON_PRETTY_PRINT) . PHP_EOL);
+
+print('User photo saved to: ' . DATA_DIR . '/' . $userProfile['photo']);
+$api->requestUserPhoto($userProfile['photo'], DATA_DIR);
 
 $places = $api->requestPlaces();
 print('Places:' . PHP_EOL . json_encode($places, JSON_PRETTY_PRINT) . PHP_EOL);
@@ -71,6 +75,8 @@ print('Accesses:' . PHP_EOL . json_encode($api->requestAccesses(), JSON_PRETTY_P
 
 print('Guests:' . PHP_EOL . json_encode($api->requestGuests(), JSON_PRETTY_PRINT) . PHP_EOL);
 
-print('Objects of ' . $places['lieux'][0]['address'] . PHP_EOL . json_encode($api->requestObjects($userProfile['reference'], $places['lieux'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
+print('Objects of ' . $places['lieux'][0]['address'] . ':' . PHP_EOL . json_encode($api->requestObjects($userProfile['reference'], $places['lieux'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
-file_put_contents(TOKEN_FILENAME, json_encode($api->getAuthenticationData()));
+//print('Open ' . $places['lieux'][0]['address'] . ':' . PHP_EOL . json_encode($api->requestOpening($places['lieux'][0]['board'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
+
+file_put_contents($token_filename, json_encode($api->getAuthenticationData()));

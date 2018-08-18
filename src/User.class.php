@@ -111,6 +111,17 @@ class User {
         return $this->curlExec("https://www.elocky.com/webservice/user/.json", 'access_token=' . $this->access_token);
     }
     
+    /**
+     * Download and save the user photo
+     * @param string $_filename filename of the photo to retrieve
+     * @param string $_save_dir local directory to save the photo
+     */
+    public function requestUserPhoto($_filename, $_save_dir) {
+        $this->manageToken();
+        $photo = $this->curlExec("https://www.elocky.com/webservice/user/photo/" . $_filename . "/download.json", 'access_token=' . $this->access_token, false);
+        return file_put_contents($_save_dir . '/' . $_filename, $photo);
+    }
+    
     
     # Places management
     ###################
@@ -153,6 +164,12 @@ class User {
     public function requestObjects($_refAdmin, $_idPlace) {
         $this->manageToken();
         return $this->curlExec("https://www.elocky.com/webservice/address/object/" . $_refAdmin . "/" . $_idPlace . ".json", 'access_token=' . $this->access_token);
+    }
+    
+    // FIXME: tentative, pas encore supporté par l'API
+    public function requestOpening($_idBoard) {
+        $this->manageToken();
+        return $this->curlExec("https://www.elocky.com/webservice/object/open/" . $_idBoard . ".json", 'access_token=' . $this->access_token);
     }
     
     ###################################
@@ -202,8 +219,19 @@ class User {
                 $this->logger->debug('current token is still valid');
             }
             else {
-                $this->logger->info('current token is no more valid, refresh it');
-                $this->refreshToken();
+                $this->logger->info('current token has expired, refresh it');
+                try {
+                    $this->refreshToken();
+                }
+                catch (\Exception $e) {
+                    $msg = json_decode($e->getMessage(), TRUE);
+                    if ($msg['error'] == 'invalid_grant') {
+                        $this->logger->info('refresh token has expired, get a new one');
+                        $this->initToken();
+                    }
+                    else
+                        throw $e;
+                }
             }
         }
         else {
@@ -264,30 +292,48 @@ class User {
     /**
      * @param string $url request url to contact
      * @param string $param request parameters
+     * @param bool $is_json set to true if the server response is supposed to be JSON formatted
      * @throws \Exception if the Elocky servers returns a non JSON string; or if the Elocky server returned an error
      * @return array JSON array
      */
-    protected function curlExec($url, $param) {
+    protected function curlExec($url, $param, $is_json = true) {
         $ch = curl_init($url . '?' . $param);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
         curl_close($ch);
 
-        $this->logger->debug('Reception from Elocky server: ' . $data);
-        
-        $jsonArray = json_decode($data, TRUE);
-        if (json_last_error() != JSON_ERROR_NONE) {
-            $msg = json_last_error_msg();
-            $this->logger->critical('json decoding error: ' . $msg);
-            throw new \Exception($msg);
+        if ($data === FALSE) {
+            $err = json_encode(array("error" => "connexion_error", "error_description" => "cannot connect to the distant server"));
+            $this->logger->critical($err);
+            throw new \Exception($err);
+        }
+          
+        if (strlen($data) == 0) {
+            $err = json_encode(array("error" => "data_error", "error_description" => "no data retrieved from the distant server"));
+            $this->logger->warning($err);
+            throw new \Exception($err);
         }
         
-        if (array_key_exists('error', $jsonArray)) {
-            $this->logger->error('Elocky server returns an error: ' . $data);
-            throw new \Exception($data);
+        if ($is_json) {
+            $this->logger->debug('reception of: ' . strval($data));
+            $ret_data = json_decode($data, TRUE);
+            if (json_last_error() != JSON_ERROR_NONE) {
+                $err = json_encode(array("error" => "json_error", "error_description" => json_last_error_msg()));
+                $this->logger->critical($err);
+                throw new \Exception($err);
+            }
+            
+            if (array_key_exists('error', $ret_data)) {
+                $this->logger->error('elocky server returns an error: ' . $data);
+                throw new \Exception($data);
+            }
+        }
+        else {
+            $this->logger->debug('reception of ' . strlen($data) . ' bytes');
+            $ret_data = $data;
         }
         
-        return $jsonArray;
+        return $ret_data;
     }
     
     protected function getSecretIdFields() {
