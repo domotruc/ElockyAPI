@@ -290,6 +290,7 @@ class User {
     }
     
     /**
+     * Execute a request to the Elocky server
      * @param string $url request url to contact
      * @param string $param request parameters
      * @param bool $is_json set to true if the server response is supposed to be JSON formatted
@@ -303,28 +304,23 @@ class User {
         curl_close($ch);
 
         if ($data === FALSE) {
-            $err = json_encode(array("error" => "connexion_error", "error_description" => "cannot connect to the distant server"));
-            $this->logger->critical($err);
-            throw new \Exception($err);
+            throw new \Exception(json_encode(
+                    array("error" => "connexion_error",
+                          "error_description" => "cannot connect to the distant server")));
         }
           
         if (strlen($data) == 0) {
-            $err = json_encode(array("error" => "data_error", "error_description" => "no data retrieved from the distant server"));
-            $this->logger->warning($err);
-            throw new \Exception($err);
+            throw new \Exception(json_encode(array("error" => "data_error", "error_description" => "no data retrieved from the distant server")));
         }
         
         if ($is_json) {
-            $this->logger->debug('reception of: ' . strval($data));
+            $this->logger->debug('reception of ' . strval($data));
             $ret_data = json_decode($data, TRUE);
             if (json_last_error() != JSON_ERROR_NONE) {
-                $err = json_encode(array("error" => "json_error", "error_description" => json_last_error_msg()));
-                $this->logger->critical($err);
-                throw new \Exception($err);
+                throw new \Exception(json_encode(array("error" => "json_error", "error_description" => json_last_error_msg())));
             }
             
             if (array_key_exists('error', $ret_data)) {
-                $this->logger->error('elocky server returns an error: ' . $data);
                 throw new \Exception($data);
             }
         }
