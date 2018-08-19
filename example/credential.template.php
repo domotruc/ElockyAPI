@@ -4,5 +4,5 @@ define('CLIENT_SECRET', '');
 define('USERNAME', '');
 define('PASSWORD', '');
 
-# File (full pathname) to store token data
-define('TOKEN_FILENAME', '');
+# Directory to store data (shall exist)
+define('DATA_DIR', '');
