@@ -146,6 +146,17 @@ class User {
         return $this->curlExec("https://www.elocky.com/webservice/address/list.json", 'access_token=' . $this->access_token);
     }
     
+    /**
+     * Download and save the place photo
+     * @param string $_filename filename of the photo to retrieve
+     * @param string $_save_dir local directory to save the photo
+     */
+    public function requestPlacePhoto($_filename, $_save_dir) {
+        $this->manageToken();
+        $photo = $this->curlExec("https://www.elocky.com/webservice/address/photo/" . $_filename . "/download.json", 'access_token=' . $this->access_token, false);
+        return file_put_contents($_save_dir . '/' . $_filename, $photo);
+    }
+    
     # Access management
     ###################
     
