@@ -82,4 +82,6 @@ print('Objects of "' . $places['lieux'][0]['address'] . '":' . PHP_EOL . json_en
 
 //print('Open ' . $places['lieux'][0]['address'] . ':' . PHP_EOL . json_encode($api->requestOpening($places['lieux'][0]['board'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
+print('History of "' . $places['lieux'][0]['address'] . '":' . PHP_EOL . json_encode($api->requestHistory($places['lieux'][0]['id'], 1), JSON_PRETTY_PRINT) . PHP_EOL);
+
 file_put_contents($token_filename, json_encode($api->getAuthenticationData()));

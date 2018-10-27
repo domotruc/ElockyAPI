@@ -157,6 +157,11 @@ class User {
         return file_put_contents($_save_dir . '/' . $_filename, $photo);
     }
     
+    public function requestHistory($_place_id, $_start_nb) {
+        $this->manageToken();
+        return $this->curlExec("https://www.elocky.com/webservice/address/log/" . $_place_id . "/" . $_start_nb . ".json", 'access_token=' . $this->access_token);
+    }
+    
     # Access management
     ###################
     
