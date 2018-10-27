@@ -1,5 +1,5 @@
 {
-	"name" : "domotruc/ElockyAPI",
+	"name" : "domotruc/elocky-api",
 	"description" : "Elocky API implementation",
 	"type" : "library",
 	"license" : "AGPL-3.0",

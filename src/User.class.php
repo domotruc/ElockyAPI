@@ -6,7 +6,7 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Implemeent the Elocky API.
+ * Implement the Elocky API.
  * The User class is either an anonymous user or an authenticated user depending on the credential parameters 
  * at object creation.
  * @see https://elocky.com/fr/doc-api-test Elocky API
