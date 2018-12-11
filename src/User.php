@@ -140,6 +140,7 @@ class User {
      * Return the places associated to this user
      * @see https://elocky.com/fr/doc-api-test#liste-lieu Elocky API
      * @return array list of places as an associative array
+     * @throws \Exception in case of communication error with the Elocky server
      */
     public function requestPlaces() {
         $this->manageToken();
@@ -226,6 +227,20 @@ class User {
     }
         
     /**
+     * Refresh the access token
+     * Request a new token if needed
+     */
+    public function refreshToken() {
+        if (isset($this->refresh_token)) {
+            $this->logger->info('refresh the current token');
+            $this->processToken($this->requestUserTokenRefresh());
+        }
+        else {
+            $this->initToken();
+        }
+    }
+    
+    /**
      * Manage the token validity. This method shall be called before each request to the Elocky server
      * to insure that the token is defined and valid.
      */
@@ -268,16 +283,6 @@ class User {
     protected function requestUserTokenRefresh() {
         return $this->curlExec("https://www.elocky.com/oauth/v2/token",
                 $this->getSecretIdFields() . "&grant_type=refresh_token&refresh_token=" . $this->refresh_token);
-    }
-    
-    protected function refreshToken() {
-        if (isset($this->refresh_token)) {
-            $this->logger->info('refresh the current token');
-            $this->processToken($this->requestUserTokenRefresh());
-        }
-        else {
-            $this->initToken();
-        }
     }
     
     /**
