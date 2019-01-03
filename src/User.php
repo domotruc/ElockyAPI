@@ -72,7 +72,7 @@ class User {
     protected function __construct2($_client_id, $_client_secret) {
         $this->client_id = $_client_id;
         $this->client_secret = $_client_secret;
-        $this->logger->debug('anonymous user creation');
+        $this->logger->debug($this->buildMsg('anonymous user creation'));
     }
 
     protected function __construct3($_client_id, $_client_secret, LoggerInterface $_logger) {
@@ -85,7 +85,7 @@ class User {
         $this->client_secret = $_client_secret;
         $this->username = $_username;
         $this->password = $_password;
-        $this->logger->debug('authenticated user creation');
+        $this->logger->debug($this->buildMsg('authenticated user creation'));
     }
     
     protected function __construct5($_client_id, $_client_secret, $_username, $_password, LoggerInterface $_logger) {
@@ -215,7 +215,7 @@ class User {
         $this->access_token = $_authData[self::ACCESS_TOKEN_ID];
         $this->refresh_token = $_authData[self::REFRESH_TOKEN_ID];
         $this->expiry_date = (new \DateTime())->setTimestamp($_authData[self::EXPIRY_DATE_ID]);
-        $this->logger->debug('authentication data set');
+        $this->logger->debug($this->buildMsg('authentication data set'));
     }
     
     /**
@@ -232,7 +232,7 @@ class User {
      */
     public function refreshToken() {
         if (isset($this->refresh_token)) {
-            $this->logger->info('refresh the current token');
+            $this->logger->info($this->buildMsg('refresh the current token'));
             $this->processToken($this->requestUserTokenRefresh());
         }
         else {
@@ -247,17 +247,17 @@ class User {
     protected function manageToken() {
         if (isset($this->access_token)) {
             if ($this->isTokenValid()) {
-                $this->logger->debug('current token is still valid');
+                $this->logger->debug($this->buildMsg('current token is still valid'));
             }
             else {
-                $this->logger->info('current token has expired, refresh it');
+                $this->logger->info($this->buildMsg('current token has expired, refresh it'));
                 try {
                     $this->refreshToken();
                 }
                 catch (\Exception $e) {
                     $msg = json_decode($e->getMessage(), TRUE);
                     if ($msg['error'] == 'invalid_grant') {
-                        $this->logger->info('refresh token has expired, get a new one');
+                        $this->logger->info($this->buildMsg('refresh token has expired, get a new one'));
                         $this->initToken();
                     }
                     else
@@ -266,7 +266,7 @@ class User {
             }
         }
         else {
-            $this->logger->info('token initialization');
+            $this->logger->info($this->buildMsg('token initialization'));
             $this->initToken();
         }
     }
@@ -293,11 +293,11 @@ class User {
      */
     protected function initToken() {
         if (isset($this->username)) {
-            $this->logger->info('request an authenticated user access');
+            $this->logger->info($this->buildMsg('request an authenticated user access'));
             $this->processToken($this->requestUserToken());
         }
         else {
-            $this->logger->info('request an anonymous access');
+            $this->logger->info($this->buildMsg('request an anonymous access'));
             $this->processToken($this->requestAnonymousToken());
         }
     }
@@ -335,7 +335,7 @@ class User {
         }
         
         if ($is_json) {
-            $this->logger->debug('reception of ' . strval($data));
+            $this->logger->debug($this->buildMsg('reception of ' . strval($data)));
             $ret_data = json_decode($data, TRUE);
             if (json_last_error() != JSON_ERROR_NONE) {
                 throw new \Exception(json_encode(array("error" => "json_error", "error_description" => json_last_error_msg())));
@@ -346,7 +346,7 @@ class User {
             }
         }
         else {
-            $this->logger->debug('reception of ' . strlen($data) . ' bytes');
+            $this->logger->debug($this->buildMsg('reception of ' . strlen($data) . ' bytes'));
             $ret_data = $data;
         }
         
@@ -362,5 +362,15 @@ class User {
         if (array_key_exists('refresh_token', $_jsonArray))
             $this->refresh_token = $_jsonArray['refresh_token'];
         $this->expiry_date = (new \DateTime())->add(new \DateInterval('PT'.$_jsonArray['expires_in'].'S'));
+    }
+    
+    /**
+     * Append the username (or anonymous if applicable)
+     * @param string $msg
+     * @return string
+     */
+    private function buildMsg($msg) {
+        $name = isset($this->username) ? $this->username : 'anonymous';
+        return '[' . $name . '] ' . $msg;
     }
 }
