@@ -53,6 +53,11 @@ class User {
      * @var \DateTime Token expiry date
      */
     private $expiry_date;   
+    
+    /**
+     * @var callable $token_update_func user callback called when token is updated (if set) 
+     */
+    private $update_token_func;
 
     # CONSTRUCTORS
     ##############
@@ -91,6 +96,17 @@ class User {
     protected function __construct5($_client_id, $_client_secret, $_username, $_password, LoggerInterface $_logger) {
         $this->logger = $_logger;
         $this->__construct4($_client_id, $_client_secret, $_username, $_password);
+    }
+    
+    # Callback setters
+    ##################
+    
+    /**
+     * Set the user callback to be called when token is updated
+     * @param callable $callback user callback
+     */
+    public function setUpdateTokenFunc($callback) {
+        $this->update_token_func = $callback;
     }
     
     # API functionalities management
@@ -234,6 +250,8 @@ class User {
         if (isset($this->refresh_token)) {
             $this->logger->info($this->buildMsg('refresh the current token'));
             $this->processToken($this->requestUserTokenRefresh());
+            if (isset($this->update_token_func))
+                call_user_func($this->update_token_func);
         }
         else {
             $this->initToken();
@@ -295,10 +313,14 @@ class User {
         if (isset($this->username)) {
             $this->logger->info($this->buildMsg('request an authenticated user access'));
             $this->processToken($this->requestUserToken());
+            if (isset($this->update_token_func))
+                call_user_func($this->update_token_func);
         }
         else {
             $this->logger->info($this->buildMsg('request an anonymous access'));
             $this->processToken($this->requestAnonymousToken());
+            if (isset($this->update_token_func))
+                call_user_func($this->update_token_func);
         }
     }
     

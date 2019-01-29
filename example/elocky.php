@@ -12,6 +12,12 @@ class Logger extends AbstractLogger {
     }
 }
 
+function update_token_func() {
+    global $token_filename, $api;
+    file_put_contents($token_filename, json_encode($api->getAuthenticationData()));
+    print ('token updated and saved' . PHP_EOL);
+}
+
 // Try with wrong id
 try {
     new User('', '');
@@ -24,6 +30,7 @@ try {
 
 // Authenticated user
 $api = new User(CLIENT_ID, CLIENT_SECRET, USERNAME, PASSWORD, new Logger());
+$api->setUpdateTokenFunc('update_token_func');
 
 // Restore token data
 $token_filename = DATA_DIR . '/elocky_auth.txt';
@@ -65,4 +72,4 @@ print('History of "' . $places['lieux'][0]['address'] . '":' . PHP_EOL . json_en
 //print('Open ' . $places['lieux'][0]['address'] . ':' . PHP_EOL . json_encode($api->requestOpening($places['lieux'][0]['board'][0]['id']), JSON_PRETTY_PRINT) . PHP_EOL);
 
 // Save token data
-file_put_contents($token_filename, json_encode($api->getAuthenticationData()));
+
